@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Chatbot</string>
+    <string name="api_key">AIzaSyCFgu0AFYbiGJ-zRh0aAd4UKfbQb7ci1Us</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="singin">Sign in?</string>
+    <string name="forgt_pssword"></string>
+    <string name="goagle">Sign With Goagle</string>
+    <string name="login">Login</string>
+    <string name="welcome">Welcome Back</string>
+    <string name="create_account">Create Your Account</string>
+    <string name="singup">Sing Up</string>
+    <string name="reset_title">Enter Your Email To Send You Link To Reset Your Password </string>
+    <string name="snd_reset_link">Send Reset Link</string>
+    <string name="cancel">Cancel</string>
+    <string name="enter_email">Enter your email"></string>
+    <string name="client_id">AIzaSyD1hF6Ro6spDBJ22jo63syoi9TqL96b8a4</string>
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+</resources>

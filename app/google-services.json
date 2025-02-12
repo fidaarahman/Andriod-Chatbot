@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "178458749506",
+    "project_id": "chatbot-9c36e",
+    "storage_bucket": "chatbot-9c36e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:178458749506:android:e0b0d4ee9337638d5f9bdb",
+        "android_client_info": {
+          "package_name": "com.gemini.chatbot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1hF6Ro6spDBJ22jo63syoi9TqL96b8a4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

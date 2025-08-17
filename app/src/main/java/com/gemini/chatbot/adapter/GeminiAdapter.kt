@@ -76,4 +76,10 @@ class GeminiAdapter(var context: Context, var list: ArrayList<DataResponse>): Re
             (holder as UserViewHolder).bind(position)
         }
     }
+
+    fun submitItems(newItems: List<DataResponse>) {
+        list.clear()
+        list.addAll(newItems)
+        notifyDataSetChanged()
+    }
 }

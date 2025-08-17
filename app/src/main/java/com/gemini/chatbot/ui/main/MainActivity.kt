@@ -1,4 +1,4 @@
-package com.gemini.chatbot
+package com.gemini.chatbot.ui.main
 
 import android.Manifest
 import android.content.Intent
@@ -16,14 +16,17 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
-import androidx.recyclerview.widget.RecyclerView
+import com.gemini.chatbot.R
 import com.gemini.chatbot.adapter.GeminiAdapter
 import com.gemini.chatbot.databinding.ActivityMainBinding
 import com.gemini.chatbot.model.DataResponse
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.content
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import com.gemini.chatbot.roomHelper.AppDB
+import com.gemini.chatbot.roomHelper.NoteRepository
+import com.gemini.chatbot.ui.chat.ChatFragment
+import com.gemini.chatbot.viewmodel.ChatViewModel
+import com.gemini.chatbot.viewmodel.ChatViewModelFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,31 +34,40 @@ class MainActivity : AppCompatActivity() {
     private var bitmap: Bitmap? = null
     private lateinit var imageUri: String
     private val REQUEST_PERMISSION_MICROPHONE = 1
-    private var responseData = arrayListOf<DataResponse>()
     private lateinit var adapter: GeminiAdapter
 
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var recognizerIntent: Intent
 
+    private lateinit var viewModel: ChatViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize View Binding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize RecyclerView and Adapter
-        adapter = GeminiAdapter(this, responseData)
+        adapter = GeminiAdapter(this, arrayListOf())
         binding.recyclerViewId.adapter = adapter
+
+        val db = AppDB.getDatabase(applicationContext, CoroutineScope(SupervisorJob()))
+        val noteRepository = NoteRepository(db.noteDao())
+        val chatRepository = com.gemini.chatbot.data.repository.ChatRepository(applicationContext, noteRepository)
+        val factory = ChatViewModelFactory(chatRepository)
+        viewModel = androidx.lifecycle.ViewModelProvider(this, factory)[ChatViewModel::class.java]
+
+        viewModel.messages.observe(this) { list ->
+            adapter.submitItems(list)
+        }
+
         binding.navigationView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_chats -> {
-                    openFragment(ChatFragment()) // Open ChatFragment
-                    binding.drawerLayout.closeDrawers() // Close the drawer
+                    openFragment(ChatFragment())
+                    binding.drawerLayout.closeDrawers()
                     true
                 }
                 R.id.nav_settings -> {
-                    // Handle settings navigation (if required)
                     Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show()
                     binding.drawerLayout.closeDrawers()
                     true
@@ -63,21 +75,16 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
-        // Check and request permissions
-        checkAndRequestPermissions()
 
-        // Initialize Speech Recognizer
+        checkAndRequestPermissions()
         initSpeechRecognizer()
 
-
-        // Drawer Icon Click Listener
         binding.drawerIcon.setOnClickListener {
-            binding.drawerLayout.openDrawer(binding.navigationView) // Open drawer
+            binding.drawerLayout.openDrawer(binding.navigationView)
         }
 
-        // Mic Icon Click Listener
         binding.ivVoice.setOnClickListener {
-            Toast.makeText(this,"speak to record text",Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "speak to record text", Toast.LENGTH_SHORT).show()
             if (checkPermission()) {
                 if (SpeechRecognizer.isRecognitionAvailable(this)) {
                     speechRecognizer.startListening(recognizerIntent)
@@ -89,50 +96,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Button Click Listener
         binding.askButton.setOnClickListener {
             val prompt = binding.askEditText.text.toString()
             if (prompt.isNotEmpty()) {
                 binding.askEditText.setText("")
-                processUserPrompt(prompt)
-            }
-        }
-    }
-
-    private fun processUserPrompt(prompt: String) {
-        val generativeModel = GenerativeModel(
-            modelName = "gemini-1.5-flash",
-            apiKey = getString(R.string.api_key)
-        )
-
-        if (bitmap != null) {
-            responseData.add(DataResponse(0, prompt, imageUri))
-            adapter.notifyDataSetChanged()
-
-            val inputContent = content {
-                image(bitmap!!)
-                text(prompt)
-            }
-
-            GlobalScope.launch {
-                val response = generativeModel.generateContent(inputContent)
-                runOnUiThread {
-                    responseData.add(DataResponse(1, response.text!!, ""))
-                    adapter.notifyDataSetChanged()
-                }
-            }
-        } else {
-            responseData.add(DataResponse(0, prompt, ""))
-            adapter.notifyDataSetChanged()
-
-            GlobalScope.launch {
-                bitmap = null
-                imageUri = ""
-                val response = generativeModel.generateContent(prompt)
-                runOnUiThread {
-                    responseData.add(DataResponse(1, response.text!!, ""))
-                    adapter.notifyDataSetChanged()
-                }
+                viewModel.sendPrompt(prompt, bitmap, imageUri)
             }
         }
     }
@@ -226,10 +194,11 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         speechRecognizer.destroy()
     }
+
     private fun openFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, fragment)
-            .addToBackStack(null) // Add to backstack for navigation
+            .addToBackStack(null)
             .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
             .commit()
     }
